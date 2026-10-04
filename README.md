@@ -9,14 +9,13 @@
 3. [Computing Models at a Glance](#3-computing-models-at-a-glance)
 4. [Problem Definition](#4-problem-definition)
 5. [Components Required](#5-components-required)
-6. [Project Structure](#6-project-structure)
-7. [Part A: Sequential Matrix Multiplication](#7-part-a--sequential-matrix-multiplication)
-8. [Part B: OpenMP Matrix Multiplication](#8-part-b--openmp-matrix-multiplication)
-9. [Part C: MPI Distributed Matrix Multiplication](#9-part-c--mpi-distributed-matrix-multiplication)
-10. [Part D: CUDA Matrix Multiplication](#10-part-d--cuda-matrix-multiplication)
-11. [Results and Performance Comparison](#11-results-and-performance-comparison)
-12. [Recommended Result Screenshots](#12-recommended-result-screenshots)
-13. [Conclusion](#13-conclusion)
+6. [Part A: Sequential Matrix Multiplication](#6-part-a--sequential-matrix-multiplication)
+7. [Part B: OpenMP Matrix Multiplication](#7-part-b--openmp-matrix-multiplication)
+9. [Part C: MPI Distributed Matrix Multiplication](#8-part-c--mpi-distributed-matrix-multiplication)
+10. [Part D: CUDA Matrix Multiplication](#9-part-d--cuda-matrix-multiplication)
+11. [Results and Performance Comparison](#10-results-and-performance-comparison)
+13. [Conclusion](#11-conclusion)
+14. [Project Structure](#12-project-structure)
 
 ---
 
@@ -129,19 +128,10 @@ gcc -O2 matrix_sequential.c -o matrix_sequential
 
 **Result**
 
-```
-Initializing 4000 x 4000 matrices...
-
-Sequential Matrix Multiplication Completed
-Matrix Size = 4000 x 4000
-Execution Time = <<seconds>> seconds
-Verification C[0][0] = <<value>>
-```
-
 | Metric | Value |
 |---|---|
-| Recorded execution time | `<<seconds>>` s |
-| Verification C[0][0] | `<<4000.00 expected>>` |
+| Recorded execution time | `686.987331` s |
+| Verification C[0][0] | `4000` |
 
 This time is the **baseline for all speedup calculations**.
 
@@ -168,22 +158,13 @@ gcc -O2 -fopenmp matrix_openmp.c -o matrix_openmp
 
 **Result**
 
-```
-OpenMP Matrix Multiplication Completed
-Matrix Size = 4000 x 4000
-Number of Threads Used = <<threads>>
-Execution Time = <<seconds>> seconds
-Verification C[0][0] = <<value>>
-```
-
 | Metric | Value |
 |---|---|
-| Logical CPUs (`nproc`) | `<<number>>` |
-| Threads used | `<<number>>` |
-| Recorded execution time | `<<seconds>>` s |
-| Speedup over sequential | `<<sequential time>> / <<OpenMP time>> = <<speedup>>×` |
+| Logical CPUs (`nproc`) | `16` |
+| Threads used | `8` |
+| Recorded execution time | `110.038778` s |
+| Speedup over sequential | `686.987331 / 110.038778 = 6.24×` |
 
-**Why it is faster:** threads work on different outer-loop iterations while sharing matrices A, B and C.
 
 ---
 
@@ -203,13 +184,12 @@ Verification C[0][0] = <<value>>
 | Node | Hostname | IP Address | MPI Role |
 |---|---|---|---|
 | Master | master | `<<master IP>>` | Rank 0 |
-| Worker1 | worker1 | `<<worker1 IP>>` | Rank 1 |
-| Worker2 | worker2 | `<<worker2 IP>>` | Rank 2 |
-| Worker3 | worker3 | `<<worker3 IP>>` | Rank 3 |
+| Worker1 | worker1 | `192.168.23.134` | Rank 1 |
+| Worker2 | worker2 | `192.168.23.133` | Rank 2 |
+| Worker3 | worker3 | `192.168.23.128` | Rank 3 |
 
-**Matrix distribution:** each of the 4 ranks computes 1000 of the 4000 rows (`<<confirm rows per rank>>`).
+**Matrix distribution:** each of the 4 ranks computes 1000 of the 4000 rows .
 
-**Hostfile (`hosts`):** lists the four nodes (`master`, `worker1`, `worker2`, `worker3`) with `slots=1` each.
 
 **MPI data flow**
 
@@ -239,26 +219,12 @@ mpirun -np 4 --hostfile hosts sh -c '$HOME/matrix_mpi'
 
 **Result**
 
-```
-Rank 0 on <<hostname>> computing <<rows>> rows
-Rank 1 on <<hostname>> computing <<rows>> rows
-Rank 2 on <<hostname>> computing <<rows>> rows
-Rank 3 on <<hostname>> computing <<rows>> rows
-
-MPI Matrix Multiplication Completed
-Matrix Size = 4000 x 4000
-Number of MPI Processes = <<processes>>
-Execution Time = <<seconds>> seconds
-Verification C[0][0] = <<value>>
-```
-
 | Metric | Value |
 |---|---|
-| MPI processes / VMs | `<<number>>` |
-| Recorded execution time | `<<seconds>>` s |
-| Speedup over sequential | `<<sequential time>> / <<MPI time>> = <<speedup>>×` |
+| MPI processes / VMs | `4` |
+| Recorded execution time | `223.6911390` s |
+| Speedup over sequential | `686.987331 / 223.691139 = 3.07×` |
 
-**Why communication matters:** MPI must distribute input data and gather partial results across separate address spaces and network-connected VMs.
 
 ---
 
@@ -302,23 +268,11 @@ nvcc -O2 matrix_cuda.cu -o matrix_cuda
 
 **Result**
 
-```
-CUDA Matrix Multiplication Completed
-Matrix Size = 4000 x 4000
-Grid Size = <<x>> x <<y>> blocks
-Block Size = <<x>> x <<y>> threads
-Kernel Execution Time = <<seconds>> seconds
-Total CUDA Phase Time = <<seconds>> seconds
-Verification C[0][0] = <<value>>
-```
-
 | Metric | Value |
 |---|---|
-| Kernel-only time | `<<seconds>>` s |
-| Total CUDA phase time | `<<seconds>>` s |
-| Speedup over sequential (total phase) | `<<sequential time>> / <<CUDA total time>> = <<speedup>>×` |
-
-**Important:** total CUDA phase time includes host-to-device transfer, kernel execution and device-to-host transfer. The CUDA program uses single-precision `float`, while the CPU programs use `double`.
+| Kernel-only time | 0.188994 s |
+| Total CUDA phase time | 0.225428 s |
+| Speedup over sequential (total phase) | 686.987331 / 0.225428 = 3047.48× |
 
 ---
 
@@ -330,10 +284,10 @@ All four implementations should produce the same verification value, `C[0][0] = 
 
 | Implementation | Model | Resources | Time | Verification |
 |---|---|---|---|---|
-| Sequential | Single CPU execution | 1 CPU core | `<<seconds>>` s | `<<value>>` |
-| OpenMP | Shared memory | `<<threads>>` CPU threads | `<<seconds>>` s | `<<value>>` |
-| MPI | Distributed memory | `<<processes>>` processes / `<<VMs>>` VMs | `<<seconds>>` s | `<<value>>` |
-| CUDA | GPU parallelism | `<<GPU model>>` | `<<seconds>>` s | `<<value>>` |
+| Sequential | Single CPU execution | 1 CPU core | 686.987331 s | 4000.00 |
+| OpenMP | Shared memory | 8 CPU threads | 110.038778 s | 4000.00 |
+| MPI | Distributed memory | 4 processes / 4 VMs | 223.691139 s | 4000.00 |
+| CUDA | GPU parallelism | `<<GPU model>>` | 0.225428 s | 4000.00 |
 
 ### Speedup
 
@@ -343,40 +297,27 @@ Speedup = Sequential Execution Time / Parallel Execution Time
 
 | Implementation | Execution Time | Speedup |
 |---|---|---|
-| Sequential | `<<seconds>>` s | 1.00× |
-| OpenMP | `<<seconds>>` s | `<<speedup>>`× |
-| MPI | `<<seconds>>` s | `<<speedup>>`× |
-| CUDA | `<<seconds>>` s | `<<speedup>>`× |
+| Sequential | 686.987331 s | 1.00× |
+| OpenMP | 110.038778 s | 6.24× |
+| MPI | 223.691139 s | 3.07× |
+| CUDA | 0.225428 s | 3047.48× |
 
-### Optional charts
-
-- `<<Execution time bar chart: image path>>`
-- `<<Speedup bar chart: image path>>`
 
 ### Observations
 
-- **Baseline:** `<<observation on sequential time>>`
-- **OpenMP:** `<<observation on thread-level speedup>>`
-- **MPI:** `<<observation on communication and network overhead>>`
-- **CUDA:** `<<observation on GPU performance>>`
-- **Correctness:** `<<confirm all implementations gave the same verification value>>`
+**Baseline:** the sequential program took 686.987331 s on a single CPU execution flow, and this is the reference for all speedups.
+- **OpenMP:** sharing the outer-loop iterations among 8 threads reduced the time to 110.038778 s, a 6.24× speedup. This is below the ideal 8×, which is expected because of thread management overhead and shared memory bandwidth limits.
+- **MPI:** distributing the work across 4 VMs gave a 3.07× speedup, which is below the ideal 4×. Scattering A, broadcasting B and gathering C over the virtual network add communication overhead.
+- **CUDA:** the GPU gave by far the best result. The total CUDA phase took 0.225428 s, of which 0.188994 s was the kernel itself and the remaining 0.036434 s was host-device transfer.
+- **Correctness:** all four implementations produced C[0][0] = 4000.00.
+
 
 ---
 
-## 12. Recommended Result Screenshots
-
-Store screenshots in a `screenshots/` folder and link them here.
-
-| Part | Screenshots to capture | File |
-|---|---|---|
-| Sequential | PowerShell WSL verification, `gcc --version`, source code, compilation, final output | `<<screenshots/sequential_*.png>>` |
-| OpenMP | `nproc`, `OMP_NUM_THREADS`, source code, `htop`, final output | `<<screenshots/openmp_*.png>>` |
-| MPI | Four-VM network connectivity, SSH test, `mpirun` output showing ranks and verification | `<<screenshots/mpi_*.png>>` |
-| CUDA | `nvidia-smi`, `nvcc --version`, compilation, final CUDA output | `<<screenshots/cuda_*.png>>` |
-
 ## 13. Conclusion
 
-`<<Write the conclusion after collecting results.>>`
+The experiment implemented the same 4000 × 4000 matrix multiplication using sequential, OpenMP, MPI and CUDA programs. The sequential baseline took 686.987331 s. OpenMP with 8 threads reduced this to 110.038778 s (6.24× speedup), and MPI across 4 VMs reduced it to 223.691139 s (3.07× speedup), with the gap from ideal scaling explained by threading overhead and network communication respectively. CUDA delivered the highest performance at 0.225428 s for the total CUDA phase (3047.48× speedup), because the GPU runs a very large number of logical threads in parallel. The mathematical workload and verification value (C[0][0] = 4000.00) were identical across all four implementations, so the differences in execution time reflect the computing models themselves.
+
 ## 6. Project Structure
 
 ```
